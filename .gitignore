@@ -1,3 +1,9 @@
+HELP.md
+target/
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
 # Default ignored files
 /shelf/
 /.idea/workspace.xml
@@ -13,4 +19,8 @@
 *.iml
 *.ipr
 
+### Temporary hidding .md files ###
 *.md
+
+### File with environments ###
+.env
