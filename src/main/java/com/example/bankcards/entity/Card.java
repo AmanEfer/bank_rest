@@ -1,13 +1,16 @@
 package com.example.bankcards.entity;
 
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -20,12 +23,13 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Objects;
 
 @Entity
-@Table(name = "users")
+@Table(name = "cards")
 @Builder
 @ToString
 @Getter
@@ -33,23 +37,27 @@ import java.util.Objects;
 @NoArgsConstructor
 @AllArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
-public class User {
+public class Card {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "first_name", nullable = false)
-    private String firstName;
-
-    @Column(name = "last_name", nullable = false)
-    private String lastName;
-
-    @Column(name = "phone_number", nullable = false, unique = true)
-    private String phoneNumber;
+    @Column(name = "card_number", nullable = false)
+    private String cardNumber;
 
     @Column(nullable = false)
-    private String password;
+    private String placeholder;
+
+    @Column(name = "expiration_date")
+    private LocalDate expirationDate;
+
+    @Column(nullable = false)
+    @Enumerated(EnumType.STRING)
+    private CardStatus status;
+
+    @Column(nullable = false, precision = 14, scale = 2)
+    private BigDecimal balance;
 
     @Column(name = "created_at")
     @CreatedDate
@@ -59,9 +67,10 @@ public class User {
     @LastModifiedDate
     private LocalDateTime updatedAt;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
     @ToString.Exclude
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Card> cards;
+    private User user;
 
     @Override
     public final boolean equals(Object o) {
@@ -74,9 +83,9 @@ public class User {
                 ? ((HibernateProxy) this).getHibernateLazyInitializer().getPersistentClass()
                 : this.getClass();
         if (thisEffectiveClass != oEffectiveClass) return false;
-        User user = (User) o;
+        Card card = (Card) o;
 
-        return getId() != null && Objects.equals(getId(), user.getId());
+        return getId() != null && Objects.equals(getId(), card.getId());
     }
 
     @Override
