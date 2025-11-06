@@ -49,7 +49,12 @@ public class AdminCardController {
     }
 
     @GetMapping
-    public PageCardResponseDto showAllCards(Pageable pageable) {
+    public PageCardResponseDto viewAllCards(Pageable pageable) {
         return adminCardService.getAllCards(pageable);
+    }
+
+    @GetMapping("/user/{id}")
+    public PageCardResponseDto viewUserCards(@PathVariable Long id, Pageable pageable) {
+        return adminCardService.getUserCards(id, pageable);
     }
 }

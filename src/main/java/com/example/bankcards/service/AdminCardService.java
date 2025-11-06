@@ -88,14 +88,20 @@ public class AdminCardService {
         Page<CardResponseDto> page = cardRepository.findAll(pageable)
                 .map(card -> toDto(card, card.getUser().getId()));
 
-        return toPageCardDto(page);
+        return toPageDto(page);
+    }
+
+    public PageCardResponseDto getUserCards(Long id, Pageable pageable) {
+        Page<CardResponseDto> page = cardRepository.getCardsByUserId(id, pageable)
+                .map(card -> toDto(card, id));
+
+        return toPageDto(page);
     }
 
     private Card getCard(Long id) {
-        var card = cardRepository.findById(id)
+        return cardRepository.findById(id)
                 .orElseThrow(() ->
                         new IllegalArgumentException("Карта с ID %d не найдена".formatted(id)));
-        return card;
     }
 
     private String generateCardNumber() {
@@ -123,7 +129,7 @@ public class AdminCardService {
                 .build();
     }
 
-    private PageCardResponseDto toPageCardDto(Page<CardResponseDto> page) {
+    private PageCardResponseDto toPageDto(Page<CardResponseDto> page) {
         return PageCardResponseDto.builder()
                 .content(page.getContent())
                 .page(page.getNumber())
