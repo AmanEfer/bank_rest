@@ -1,9 +1,9 @@
-package com.example.bankcards.service.user;
+package com.example.bankcards.service;
 
-import com.example.bankcards.dto.UserPageResponseDto;
-import com.example.bankcards.dto.UserRegisterRequestDto;
-import com.example.bankcards.dto.UserResponseDto;
-import com.example.bankcards.dto.UserUpdateRequestDto;
+import com.example.bankcards.dto.user.PageUserResponseDto;
+import com.example.bankcards.dto.user.UserRegisterRequestDto;
+import com.example.bankcards.dto.user.UserResponseDto;
+import com.example.bankcards.dto.user.UserUpdateRequestDto;
 import com.example.bankcards.entity.User;
 import com.example.bankcards.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -22,15 +22,18 @@ public class UserService {
     private final UserRepository userRepository;
 
     @Transactional
-    public void registerUser(UserRegisterRequestDto dto) {
+    public String registerUser(UserRegisterRequestDto dto) {
         if (userRepository.existsByPhoneNumber(dto.phoneNumber()))
             throw new IllegalArgumentException("Пользователь с таким номером телефона уже зарегистрирован");
 
         var newUser = toUser(dto);
         userRepository.save(newUser);
+
+        return "Пользователь %s %s успешно зарегистрирован в системе"
+                .formatted(newUser.getLastName(), newUser.getFirstName());
     }
 
-    public UserPageResponseDto getAllUsers(Pageable pageable) {
+    public PageUserResponseDto getAllUsers(Pageable pageable) {
         Page<UserResponseDto> page = userRepository.findAll(pageable)
                 .map(this::toUserResponseDto);
 
@@ -61,11 +64,13 @@ public class UserService {
     }
 
     @Transactional
-    public void deleteUser(Long id) {
+    public String deleteUser(Long id) {
         if (!userRepository.existsById(id))
             throw new IllegalArgumentException("Пользователь не найден");
 
         userRepository.deleteById(id);
+
+        return "Пользователь с ID '%d' был удален".formatted(id);
     }
 
     private User getUser(Long id) {
@@ -92,8 +97,8 @@ public class UserService {
                 .build();
     }
 
-    private UserPageResponseDto userPageResponseDto(Page<UserResponseDto> page) {
-        return UserPageResponseDto.builder()
+    private PageUserResponseDto userPageResponseDto(Page<UserResponseDto> page) {
+        return PageUserResponseDto.builder()
                 .content(page.getContent())
                 .page(page.getNumber())
                 .size(page.getSize())

@@ -1,10 +1,10 @@
 package com.example.bankcards.controller;
 
-import com.example.bankcards.dto.UserPageResponseDto;
-import com.example.bankcards.dto.UserRegisterRequestDto;
-import com.example.bankcards.dto.UserResponseDto;
-import com.example.bankcards.dto.UserUpdateRequestDto;
-import com.example.bankcards.service.user.UserService;
+import com.example.bankcards.dto.user.PageUserResponseDto;
+import com.example.bankcards.dto.user.UserRegisterRequestDto;
+import com.example.bankcards.dto.user.UserResponseDto;
+import com.example.bankcards.dto.user.UserUpdateRequestDto;
+import com.example.bankcards.service.UserService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
@@ -31,13 +31,13 @@ public class UserController {
 
     @PostMapping
     public ResponseEntity<String> registerUser(@Valid @RequestBody UserRegisterRequestDto requestDto) {
-        userService.registerUser(requestDto);
+        var message = userService.registerUser(requestDto);
 
-        return ResponseEntity.ok("Пользователь успешно зарегистрирован в системе");
+        return ResponseEntity.ok(message);
     }
 
     @GetMapping
-    public UserPageResponseDto getAllUsers(Pageable pageable) {
+    public PageUserResponseDto getAllUsers(Pageable pageable) {
         return userService.getAllUsers(pageable);
     }
 
@@ -68,8 +68,8 @@ public class UserController {
 
     @DeleteMapping("{id}")
     public ResponseEntity<String> deleteUserById(@PathVariable Long id) {
-        userService.deleteUser(id);
+        var message = userService.deleteUser(id);
 
-        return ResponseEntity.ok("Пользователь с ID '%d' был удален".formatted(id));
+        return ResponseEntity.ok(message);
     }
 }

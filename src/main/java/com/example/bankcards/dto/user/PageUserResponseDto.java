@@ -1,11 +1,11 @@
-package com.example.bankcards.dto;
+package com.example.bankcards.dto.user;
 
 import lombok.Builder;
 
 import java.util.List;
 
 @Builder
-public record UserPageResponseDto(
+public record PageUserResponseDto(
 
         List<UserResponseDto> content,
         int page,
