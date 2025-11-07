@@ -8,10 +8,10 @@ import java.util.List;
 public record PageUserResponseDto(
 
         List<UserResponseDto> content,
-        int page,
-        int size,
-        int totalPages,
-        long totalElements,
-        boolean last
+        Integer page,
+        Integer size,
+        Integer totalPages,
+        Long totalElements,
+        Boolean last
 ) {
 }

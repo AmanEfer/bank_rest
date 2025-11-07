@@ -21,6 +21,7 @@ public class UserService {
 
     private final UserRepository userRepository;
 
+
     @Transactional
     public String registerUser(UserRegisterRequestDto dto) {
         if (userRepository.existsByPhoneNumber(dto.phoneNumber()))
@@ -33,6 +34,7 @@ public class UserService {
                 .formatted(newUser.getLastName(), newUser.getFirstName());
     }
 
+
     public PageUserResponseDto getAllUsers(Pageable pageable) {
         Page<UserResponseDto> page = userRepository.findAll(pageable)
                 .map(this::toUserResponseDto);
@@ -40,11 +42,13 @@ public class UserService {
         return userPageResponseDto(page);
     }
 
+
     public UserResponseDto getUserById(Long id) {
         var user = getUser(id);
 
         return toUserResponseDto(user);
     }
+
 
     public UserResponseDto getUserByPhoneNumber(String phoneNumber) {
         var user = userRepository.getUserByPhoneNumber(phoneNumber)
@@ -52,6 +56,7 @@ public class UserService {
 
         return toUserResponseDto(user);
     }
+
 
     @Transactional
     public UserResponseDto updateUser(Long id, UserUpdateRequestDto dto) {
@@ -63,6 +68,7 @@ public class UserService {
         return toUserResponseDto(user);
     }
 
+
     @Transactional
     public String deleteUser(Long id) {
         if (!userRepository.existsById(id))
@@ -73,10 +79,12 @@ public class UserService {
         return "Пользователь с ID '%d' был удален".formatted(id);
     }
 
+
     private User getUser(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Пользователь не найден"));
     }
+
 
     private User toUser(UserRegisterRequestDto dto) {
         return User.builder()
@@ -88,6 +96,7 @@ public class UserService {
                 .build();
     }
 
+
     private UserResponseDto toUserResponseDto(User user) {
         return UserResponseDto.builder()
                 .id(user.getId())
@@ -96,6 +105,7 @@ public class UserService {
                 .phoneNumber(user.getPhoneNumber())
                 .build();
     }
+
 
     private PageUserResponseDto userPageResponseDto(Page<UserResponseDto> page) {
         return PageUserResponseDto.builder()

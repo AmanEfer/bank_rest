@@ -6,6 +6,7 @@ import com.example.bankcards.entity.Card;
 import com.example.bankcards.entity.CardStatus;
 import com.example.bankcards.repository.CardRepository;
 import com.example.bankcards.repository.UserRepository;
+import com.example.bankcards.util.CardMasker;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,6 +28,7 @@ public class AdminCardService {
     private final CardRepository cardRepository;
     private final UserRepository userRepository;
 
+
     public CardResponseDto createNewCard(Long userId) {
         var user = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("Пользователь не найден"));
@@ -36,7 +38,6 @@ public class AdminCardService {
         do {
             cardNumber = generateCardNumber();
         } while (cardRepository.existsByCardNumber(cardNumber));
-
 
         var newCard = Card.builder()
                 .cardNumber(generateCardNumber())
@@ -52,16 +53,18 @@ public class AdminCardService {
         return toDto(newCard, user.getId());
     }
 
+
     public String blockCard(Long id) {
         var card = getCard(id);
 
-        if (card.getStatus() == CardStatus.BLOCKED)
-            throw new IllegalArgumentException("Карта уже была заблокирована ранее");
+        if (card.getStatus() != CardStatus.REQUESTED_BLOCKED)
+            throw new IllegalArgumentException("Для блокировки карты необходимо отправить запрос на блокировку");
 
         card.setStatus(CardStatus.BLOCKED);
 
-        return "Карта %s заблокирована".formatted(card.getCardNumber());
+        return "Карта %s заблокирована".formatted(mask(card.getCardNumber()));
     }
+
 
     public String activateCard(Long id) {
         var card = getCard(id);
@@ -71,16 +74,18 @@ public class AdminCardService {
 
         card.setStatus(CardStatus.ACTIVE);
 
-        return "Карта %s активирована".formatted(card.getCardNumber());
+        return "Карта %s активирована".formatted(mask(card.getCardNumber()));
     }
+
 
     public String deleteCard(Long id) {
         var card = getCard(id);
 
         cardRepository.delete(card);
 
-        return "Карта %s удалена".formatted(card.getCardNumber());
+        return "Карта %s удалена".formatted(mask(card.getCardNumber()));
     }
+
 
     @Transactional(readOnly = true)
     public PageCardResponseDto getAllCards(Pageable pageable) {
@@ -91,12 +96,17 @@ public class AdminCardService {
         return toPageDto(page);
     }
 
+
     public PageCardResponseDto getUserCards(Long id, Pageable pageable) {
-        Page<CardResponseDto> page = cardRepository.getCardsByUserId(id, pageable)
+        if (!userRepository.existsById(id))
+            throw new IllegalArgumentException("Пользователь не найден");
+
+        Page<CardResponseDto> page = cardRepository.findCardsByUserId(id, pageable)
                 .map(card -> toDto(card, id));
 
         return toPageDto(page);
     }
+
 
     private Card getCard(Long id) {
         return cardRepository.findById(id)
@@ -104,23 +114,22 @@ public class AdminCardService {
                         new IllegalArgumentException("Карта с ID %d не найдена".formatted(id)));
     }
 
+
     private String generateCardNumber() {
         var sb = new StringBuilder();
 
         for (int i = 0; i < 16; i++) {
-            if (i != 0 && i % 4 == 0)
-                sb.append(" ");
-
             sb.append(RANDOM.nextInt(10));
         }
 
         return sb.toString();
     }
 
+
     private CardResponseDto toDto(Card card, Long userId) {
         return CardResponseDto.builder()
                 .id(card.getId())
-                .cardNumber(card.getCardNumber())
+                .cardNumber(mask(card.getCardNumber()))
                 .placeholder(card.getPlaceholder())
                 .expirationDate(card.getExpirationDate())
                 .status(card.getStatus())
@@ -128,6 +137,7 @@ public class AdminCardService {
                 .userId(userId)
                 .build();
     }
+
 
     private PageCardResponseDto toPageDto(Page<CardResponseDto> page) {
         return PageCardResponseDto.builder()
@@ -138,5 +148,10 @@ public class AdminCardService {
                 .totalElements(page.getTotalElements())
                 .last(page.isLast())
                 .build();
+    }
+
+
+    private String mask(String cardNumber) {
+        return CardMasker.maskCard(cardNumber);
     }
 }
