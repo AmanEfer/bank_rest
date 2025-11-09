@@ -5,6 +5,7 @@ import com.example.bankcards.dto.user.UserRegisterRequestDto;
 import com.example.bankcards.dto.user.UserResponseDto;
 import com.example.bankcards.dto.user.UserUpdateRequestDto;
 import com.example.bankcards.entity.User;
+import com.example.bankcards.repository.CardRepository;
 import com.example.bankcards.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -20,6 +21,7 @@ import java.util.ArrayList;
 public class UserService {
 
     private final UserRepository userRepository;
+    private final CardRepository cardRepository;
 
 
     @Transactional
@@ -64,6 +66,13 @@ public class UserService {
 
         user.setFirstName(dto.firstName());
         user.setLastName(dto.lastName());
+
+        if (user.getCards() != null) {
+            user.getCards().forEach(card ->
+                    card.setPlaceholder(user.getFirstName() + " " + user.getLastName()));
+
+            cardRepository.saveAll(user.getCards());
+        }
 
         return toUserResponseDto(user);
     }

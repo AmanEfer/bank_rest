@@ -14,10 +14,12 @@ import java.util.Optional;
 
 public interface CardRepository extends JpaRepository<Card, Long> {
 
-    boolean existsByCardNumber(String cardNumber);
+    boolean existsByEncryptedCardNumber(String cardNumber);
+
 
     @Query("from Card c where c.user.id = :userId")
     Page<Card> findCardsByUserId(@Param("userId") Long userId, Pageable pageable);
+
 
     @Query("""
             select c.balance
@@ -26,6 +28,7 @@ public interface CardRepository extends JpaRepository<Card, Long> {
             where c.id = :cardId and u.id = :userId
             """)
     Optional<BigDecimal> getBalanceByCardIdAndUserId(@Param("cardId") Long cardId, @Param("userId") Long userId);
+
 
     @Query("""
             from Card c
@@ -38,7 +41,7 @@ public interface CardRepository extends JpaRepository<Card, Long> {
             from Card c
             where c.user.id = :userId
             and (:cardId is null or c.id = :cardId)
-            and (:last4 is null or right(c.cardNumber, 4) = :last4)
+            and (:last4 is null or c.last4 = :last4)
             and (:status is null or c.status = :status)
             """)
     Page<Card> findUserCards(Pageable pageable,
@@ -46,6 +49,7 @@ public interface CardRepository extends JpaRepository<Card, Long> {
                              @Param("cardId") Long cardId,
                              @Param("last4") String last4,
                              @Param("status") CardStatus status);
+
 
     @Modifying
     @Query("""

@@ -7,6 +7,7 @@ import com.example.bankcards.entity.CardStatus;
 import com.example.bankcards.repository.CardRepository;
 import com.example.bankcards.repository.UserRepository;
 import com.example.bankcards.util.CardMasker;
+import com.example.bankcards.util.Encryptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,6 +28,7 @@ public class AdminCardService {
 
     private final CardRepository cardRepository;
     private final UserRepository userRepository;
+    private final Encryptor encryptor;
 
 
     public CardResponseDto createNewCard(Long userId) {
@@ -34,13 +36,13 @@ public class AdminCardService {
                 .orElseThrow(() -> new IllegalArgumentException("Пользователь не найден"));
 
         String cardNumber;
-
         do {
             cardNumber = generateCardNumber();
-        } while (cardRepository.existsByCardNumber(cardNumber));
+        } while (cardRepository.existsByEncryptedCardNumber(encryptor.encrypt(cardNumber)));
 
         var newCard = Card.builder()
-                .cardNumber(generateCardNumber())
+                .cardNumber(cardNumber)
+                .last4(cardNumber.substring(cardNumber.length() - 4))
                 .placeholder(user.getFirstName() + " " + user.getLastName())
                 .expirationDate(LocalDate.now().plusYears(10))
                 .status(CardStatus.ACTIVE)
@@ -49,6 +51,8 @@ public class AdminCardService {
                 .build();
 
         newCard = cardRepository.saveAndFlush(newCard);
+
+        user.getCards().add(newCard);
 
         return toDto(newCard, user.getId());
     }

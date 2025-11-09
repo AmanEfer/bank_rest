@@ -12,6 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -43,11 +44,14 @@ public class Card {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "card_number", nullable = false)
-    private String cardNumber;
+    @Column(name = "encrypted_card_number", nullable = false)
+    private String encryptedCardNumber;
 
-    @Column(nullable = false)
-    private String placeholder;
+    @Column(name = "last4", nullable = false, length = 4)
+    private String last4;
+
+    @Column(name = "encrypted_placeholder", nullable = false)
+    private String encryptedPlaceholder;
 
     @Column(name = "expiration_date")
     private LocalDate expirationDate;
@@ -72,6 +76,13 @@ public class Card {
     @ToString.Exclude
     private User user;
 
+    @Transient
+    private String cardNumber;
+
+    @Transient
+    private String placeholder;
+
+
     @Override
     public final boolean equals(Object o) {
         if (this == o) return true;
@@ -87,6 +98,7 @@ public class Card {
 
         return getId() != null && Objects.equals(getId(), card.getId());
     }
+
 
     @Override
     public final int hashCode() {

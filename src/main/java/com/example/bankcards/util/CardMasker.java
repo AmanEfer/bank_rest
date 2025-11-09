@@ -15,7 +15,7 @@ public final class CardMasker {
             throw new IllegalArgumentException("Неверное значение строки cardNumber: null или пустая строка");
 
         return cardNumber.length() == 16
-                ? MASK + cardNumber.substring(12)
+                ? MASK + cardNumber.substring(cardNumber.length() - 4)
                 : FULL_MASK;
     }
 

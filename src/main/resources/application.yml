@@ -26,3 +26,6 @@ spring:
 
   config:
     import: optional:file:.env[.properties]
+
+encryption:
+  secret: ${ENCRYPT_SECRET_KEY}
