@@ -4,8 +4,10 @@ import com.example.bankcards.dto.user.PageUserResponseDto;
 import com.example.bankcards.dto.user.UserRegisterRequestDto;
 import com.example.bankcards.dto.user.UserResponseDto;
 import com.example.bankcards.dto.user.UserUpdateRequestDto;
+import com.example.bankcards.entity.Role;
 import com.example.bankcards.entity.User;
 import com.example.bankcards.repository.CardRepository;
+import com.example.bankcards.repository.RoleRepository;
 import com.example.bankcards.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Set;
 
 @Service
 @Transactional(readOnly = true)
@@ -22,6 +25,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final CardRepository cardRepository;
+    private final RoleRepository roleRepository;
 
 
     @Transactional
@@ -96,11 +100,15 @@ public class UserService {
 
 
     private User toUser(UserRegisterRequestDto dto) {
+        var role = roleRepository.findByName("ROLE_USER")
+                .orElseGet(() -> Role.builder().name("ROLE_USER").build());
+
         return User.builder()
                 .firstName(dto.firstName())
                 .lastName(dto.lastName())
                 .phoneNumber(dto.phoneNumber())
                 .password(dto.password())
+                .roles(Set.of(role))
                 .cards(new ArrayList<>())
                 .build();
     }
