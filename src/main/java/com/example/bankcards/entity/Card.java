@@ -53,7 +53,7 @@ public class Card {
     @Column(name = "encrypted_placeholder", nullable = false)
     private String encryptedPlaceholder;
 
-    @Column(name = "expiration_date")
+    @Column(name = "expiration_date", nullable = false)
     private LocalDate expirationDate;
 
     @Column(nullable = false)
