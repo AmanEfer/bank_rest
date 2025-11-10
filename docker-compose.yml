@@ -1,8 +1,3 @@
-#Что нужно сделать:
-#  - Настроить volume для хранения данных БД.
-
-version: "3.8"
-
 services:
   postgres:
     image: postgres:latest
@@ -17,6 +12,13 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     env_file:
       - .env
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
 
   bank:
     build:
@@ -32,4 +34,8 @@ services:
     env_file:
       - .env
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres-data:

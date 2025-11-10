@@ -12,7 +12,7 @@ create table if not exists users
 create table if not exists roles
 (
     id   bigserial primary key,
-    name varchar(32)
+    name varchar(32) not null unique
 );
 
 create table if not exists user_roles
@@ -22,11 +22,11 @@ create table if not exists user_roles
     primary key (user_id, role_id)
 );
 
-create table if not exists card
+create table if not exists cards
 (
     id                    bigserial primary key,
     encrypted_card_number varchar(255)   not null,
-    last4                 char(4)        not null,
+    last4                 varchar(4)     not null,
     encrypted_placeholder varchar(255)   not null,
     expiration_date       date           not null,
     status                varchar(32)    not null default 'ACTIVE' check (status in ('ACTIVE', 'BLOCKED', 'EXPIRED', 'REQUESTED_BLOCKED')),

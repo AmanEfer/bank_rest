@@ -5,6 +5,34 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                             http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
-    <include file="db/migration/V001__init.sql"/>
-    <include file="db/migration/V002__insert_default_users.sql"/>
+    <changeSet id="V001__init_schema" author="you">
+        <sqlFile path="db/migration/V001__init.sql" splitStatements="true" stripComments="true"/>
+    </changeSet>
+
+    <changeSet id="V002__insert_roles" author="you">
+        <sql>
+            insert into roles(name)
+            values ('ROLE_USER'), ('ROLE_ADMIN')
+                on conflict (name) do nothing;
+        </sql>
+    </changeSet>
+
+    <changeSet id="V003__insert_admin_user" author="you">
+        <sql>
+            insert into users(first_name, last_name, phone_number, password)
+            values ('Oleg', 'Tinkoff', '8005553535', 'c3VwZXJAbGVnc3VwZXIhc2VjcmV0MjAyNQ==')
+                on conflict (phone_number) do nothing;
+        </sql>
+    </changeSet>
+
+    <changeSet id="V004__assign_admin_role" author="you">
+        <sql>
+            insert into user_roles(user_id, role_id)
+            select u.id, r.id
+            from users u, roles r
+            where u.phone_number = '8005553535'
+              and r.name = 'ROLE_ADMIN'
+                on conflict do nothing;
+        </sql>
+    </changeSet>
 </databaseChangeLog>
