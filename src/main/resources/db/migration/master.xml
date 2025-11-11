@@ -5,11 +5,11 @@
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
                             http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
-    <changeSet id="V001__init_schema" author="you">
+    <changeSet id="V001__init_schema" author="aman.efer">
         <sqlFile path="db/migration/V001__init.sql" splitStatements="true" stripComments="true"/>
     </changeSet>
 
-    <changeSet id="V002__insert_roles" author="you">
+    <changeSet id="V002__insert_roles" author="aman.efer">
         <sql>
             insert into roles(name)
             values ('ROLE_USER'), ('ROLE_ADMIN')
@@ -17,15 +17,15 @@
         </sql>
     </changeSet>
 
-    <changeSet id="V003__insert_admin_user" author="you">
+    <changeSet id="V003__insert_admin_user" author="aman.efer">
         <sql>
             insert into users(first_name, last_name, phone_number, password)
-            values ('Oleg', 'Tinkoff', '8005553535', 'c3VwZXJAbGVnc3VwZXIhc2VjcmV0MjAyNQ==')
+            values ('Oleg', 'Tinkoff', '8005553535', '$2a$10$FSfgKepm72OSIxTKIiEQL.G5fquhiMI8nWkD9JTAk./eIU56X2Zxa') --password: parol12345
                 on conflict (phone_number) do nothing;
         </sql>
     </changeSet>
 
-    <changeSet id="V004__assign_admin_role" author="you">
+    <changeSet id="V004__assign_admin_role" author="aman.efer">
         <sql>
             insert into user_roles(user_id, role_id)
             select u.id, r.id

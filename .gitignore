@@ -24,3 +24,5 @@ target/
 
 ### File with environments ###
 .env
+### Ignore gitattributes ###
+.gitattributes

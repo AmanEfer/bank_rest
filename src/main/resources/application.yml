@@ -1,5 +1,4 @@
 #Что нужно сделать:
-#  - Настроить параметры безопасности и JWT.
 #  - Включить Swagger UI.
 
 server:
@@ -30,6 +29,20 @@ spring:
 
   config:
     import: optional:file:.env[.properties]
+
+jwt:
+  access:
+    secret: ${JWT_ACCESS_SECRET}
+    expiration: ${JWT_ACCESS_EXPIRATION}
+  refresh:
+    secret: ${JWT_REFRESH_SECRET}
+    expiration: ${JWT_REFRESH_EXPIRATION}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
 
 encryption:
   secret: ${ENCRYPT_SECRET_KEY}
