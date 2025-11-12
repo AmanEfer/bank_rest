@@ -7,6 +7,11 @@ import com.example.bankcards.dto.card.ResponseCardBlockDto;
 import com.example.bankcards.dto.card.TransferDto;
 import com.example.bankcards.entity.CardStatus;
 import com.example.bankcards.service.UserCardService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +26,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "Пользователь / карты", description = "Управление картами (только USER)")
+@ApiResponses({
+        @ApiResponse(responseCode = "401", description = "Ошибка аутентификации (невалидный токен"),
+        @ApiResponse(responseCode = "403", description = "Ошибка авторизации (только USER)")
+})
+@SecurityRequirement(name = "bearerAuth")
 @RestController
 @RequestMapping("api/v1/users")
 @RequiredArgsConstructor
@@ -30,6 +41,8 @@ public class UserCardController {
     private final UserCardService userCardService;
 
 
+    @Operation(summary = "Поиск карт пользователя с фильтрацией (по ID, последним 4 цифрам, статусу) и пагинацией")
+    @ApiResponse(responseCode = "200", description = "Список карт")
     @GetMapping("{userId}")
     public PageCardResponseDto searchUserCards(
             Pageable pageable,
@@ -48,6 +61,8 @@ public class UserCardController {
     }
 
 
+    @Operation(summary = "Проверить баланс карты")
+    @ApiResponse(responseCode = "200", description = "Баланс карты")
     @GetMapping("/{userId}/balance/{cardId}")
     public ResponseEntity<String> checkBalance(
             @PathVariable Long userId,
@@ -59,6 +74,8 @@ public class UserCardController {
     }
 
 
+    @Operation(summary = "Пополнить баланс карты")
+    @ApiResponse(responseCode = "200", description = "Средства зачислены")
     @PatchMapping("/{userId}/balance/{cardId}/deposit")
     public ResponseEntity<String> deposit(
             @PathVariable Long userId,
@@ -71,6 +88,8 @@ public class UserCardController {
     }
 
 
+    @Operation(summary = "Снять деньги с карты")
+    @ApiResponse(responseCode = "200", description = "Деньги сняты")
     @PatchMapping("/{userId}/balance/{cardId}/withdraw")
     public ResponseEntity<String> withdraw(
             @PathVariable Long userId,
@@ -83,6 +102,8 @@ public class UserCardController {
     }
 
 
+    @Operation(summary = "Перевод между своими картами")
+    @ApiResponse(responseCode = "200", description = "Перевод осуществлен")
     @PatchMapping("/{userId}/transfer")
     public ResponseEntity<String> transferToOwnCard(
             @PathVariable Long userId,
@@ -94,6 +115,8 @@ public class UserCardController {
     }
 
 
+    @Operation(summary = "Запросить блокировку карты")
+    @ApiResponse(responseCode = "200", description = "Блокировка запрошена")
     @PatchMapping("/{userId}/cards/{cardId}/block")
     public ResponseEntity<ResponseCardBlockDto> requestCardBlock(
             @PathVariable Long userId,

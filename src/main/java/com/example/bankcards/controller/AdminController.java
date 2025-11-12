@@ -4,6 +4,11 @@ import com.example.bankcards.dto.user.PageUserResponseDto;
 import com.example.bankcards.dto.user.UserResponseDto;
 import com.example.bankcards.dto.user.UserUpdateRequestDto;
 import com.example.bankcards.service.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +24,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+@Tag(name = "Админ / пользователи", description = "Управление пользователями (только ADMIN)")
+@ApiResponses({
+        @ApiResponse(responseCode = "401", description = "Ошибка аутентификации (невалидный токен"),
+        @ApiResponse(responseCode = "403", description = "Ошибка авторизации (только ADMIN)")
+})
+@SecurityRequirement(name = "bearerAuth")
 @RestController
 @RequestMapping("api/v1/admin/users")
 @RequiredArgsConstructor
@@ -28,18 +39,24 @@ public class AdminController {
     private final UserService userService;
 
 
+    @Operation(summary = "Получить список пользователей с пагинацией")
+    @ApiResponse(responseCode = "200", description = "Список пользователей")
     @GetMapping
     public PageUserResponseDto getAllUsers(Pageable pageable) {
         return userService.getAllUsers(pageable);
     }
 
 
+    @Operation(summary = "Получить пользователя по ID")
+    @ApiResponse(responseCode = "200", description = "Пользователь по ID")
     @GetMapping("{id}")
     public UserResponseDto getUserById(@PathVariable Long id) {
         return userService.getUserById(id);
     }
 
 
+    @Operation(summary = "Получить пользователя по номеру телефона")
+    @ApiResponse(responseCode = "200", description = "Пользователь по номеру телефона")
     @GetMapping("/phone")
     public UserResponseDto getUserByPhoneNumber(
             @RequestParam
@@ -51,6 +68,8 @@ public class AdminController {
     }
 
 
+    @Operation(summary = "Обновить данные пользователя")
+    @ApiResponse(responseCode = "200", description = "Данные обновлены")
     @PatchMapping("{id}")
     public ResponseEntity<UserResponseDto> updateUser(
             @PathVariable Long id,
@@ -62,6 +81,8 @@ public class AdminController {
     }
 
 
+    @Operation(summary = "Удалить пользователя по ID")
+    @ApiResponse(responseCode = "200", description = "Пользователь удален")
     @DeleteMapping("{id}")
     public ResponseEntity<String> deleteUser(@PathVariable Long id) {
         var message = userService.deleteUser(id);
