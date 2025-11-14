@@ -1,8 +1,11 @@
 package com.example.bankcards.util;
 
+import com.example.bankcards.security.CustomUserDetails;
 import com.example.bankcards.entity.User;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class UserDetailsBuilder {
 
@@ -10,16 +13,17 @@ public class UserDetailsBuilder {
     }
 
 
-    public static UserDetails buildUserDetails(User user) {
-        var userDetailsRoles = user.getRoles()
+    public static CustomUserDetails buildUserDetails(User user) {
+        var authorities = user.getRoles()
                 .stream()
                 .map(role -> new SimpleGrantedAuthority(role.getName()))
-                .toList();
+                .collect(Collectors.toSet());
 
-        return org.springframework.security.core.userdetails.User
-                .withUsername(user.getPhoneNumber())
-                .password(user.getPassword())
-                .authorities(userDetailsRoles)
-                .build();
+        return new CustomUserDetails(
+                user.getId(),
+                user.getPhoneNumber(),
+                user.getPassword(),
+                authorities
+        );
     }
 }

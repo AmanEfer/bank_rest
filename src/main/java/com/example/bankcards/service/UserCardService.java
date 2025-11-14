@@ -8,6 +8,10 @@ import com.example.bankcards.dto.card.ResponseCardBlockDto;
 import com.example.bankcards.dto.card.TransferDto;
 import com.example.bankcards.entity.Card;
 import com.example.bankcards.entity.CardStatus;
+import com.example.bankcards.exception.CardNotFoundException;
+import com.example.bankcards.exception.CardOperationFailedException;
+import com.example.bankcards.exception.CardStatusException;
+import com.example.bankcards.exception.UserNotFoundException;
 import com.example.bankcards.repository.CardRepository;
 import com.example.bankcards.repository.UserRepository;
 import com.example.bankcards.util.CardMasker;
@@ -25,6 +29,28 @@ import java.time.LocalDate;
 @RequiredArgsConstructor
 public class UserCardService {
 
+    private static final String INSUFFICIENT_FUNDS_MESSAGE = "Недостаточно средств на карте";
+    private static final String CARD_NOT_FOUND_MESSAGE = "Карта не найдена";
+    private static final String USER_NOT_FOUND_MESSAGE = "Пользователь не найден";
+    private static final String CARD_BALANCE_MESSAGE = "Баланс карты: %s рублей";
+    private static final String SUCCESS_TRANSFER_MESSAGE = "Совершен перевод %s рублей с карты %s на карту %s";
+    private static final String CARD_ALREADY_BLOCKED_MESSAGE = "Карта уже была заблокирована ренее";
+    private static final String CARD_EXPIRED_NOT_ACTIVE_MESSAGE = "Срок действия карты истек. Карта не активна";
+    private static final String ALREADY_REQUESTED_BLOCKED_MESSAGE = "Вы уже запросили блокировку";
+    private static final String UNKNOWN_STATUS_MESSAGE = "Неизвестный статус";
+    private static final String REJECT_OPERATION_MESSAGE = "Операция отклонена. Карта заблокирована";
+    private static final String CARD_EXPIRED_SUPPORT_MESSAGE = "Срок действия карты истек. Обратитесь в службу поддержки";
+    private static final String SAME_CARD_TRANSFER_MESSAGE = "Вы пытаетесь перевести деньги на ту же карту, " +
+            "с которой отправляете. \nВозможно, вы ошиблись.";
+    private static final String DEPOSIT_MESSAGE = """
+            На карту внесено %s рублей.
+            Баланс карты составляет %s рублей
+            """;
+    private static final String WITHDRAW_MESSAGE = """
+            С карты снято %s рублей.
+            Баланс карты составляет %s рублей
+            """;
+
     private final CardRepository cardRepository;
     private final UserRepository userRepository;
     private final StatusChanger statusChanger;
@@ -32,9 +58,9 @@ public class UserCardService {
 
     public String showBalance(Long cardId, Long userId) {
         var cardBalance = cardRepository.getBalanceByCardIdAndUserId(cardId, userId)
-                .orElseThrow(() -> new IllegalArgumentException("Карта не найдена"));
+                .orElseThrow(() -> new CardNotFoundException(CARD_NOT_FOUND_MESSAGE));
 
-        return "Баланс карты: %s рублей".formatted(cardBalance.toString());
+        return CARD_BALANCE_MESSAGE.formatted(cardBalance.toString());
     }
 
 
@@ -48,10 +74,7 @@ public class UserCardService {
                 .setScale(2, RoundingMode.HALF_UP));
         card = cardRepository.saveAndFlush(card);
 
-        return """
-                На карту внесено %s рублей.
-                Баланс карты составляет %s рублей
-                """.formatted(fundsDto.funds().toString(), card.getBalance().toString());
+        return DEPOSIT_MESSAGE.formatted(fundsDto.funds().toString(), card.getBalance().toString());
     }
 
 
@@ -62,16 +85,13 @@ public class UserCardService {
         validCardStatus(cardId, card);
 
         if (card.getBalance().compareTo(fundsDto.funds()) < 0)
-            throw new IllegalArgumentException("Недостаточно средств на карте");
+            throw new CardOperationFailedException(INSUFFICIENT_FUNDS_MESSAGE);
 
         card.setBalance(card.getBalance().subtract(fundsDto.funds())
                 .setScale(2, RoundingMode.HALF_UP));
         card = cardRepository.saveAndFlush(card);
 
-        return """
-                С карты снято %s рублей.
-                Баланс карты составляет %s рублей
-                """.formatted(fundsDto.funds().toString(), card.getBalance().toString());
+        return WITHDRAW_MESSAGE.formatted(fundsDto.funds().toString(), card.getBalance().toString());
     }
 
 
@@ -84,11 +104,10 @@ public class UserCardService {
         validCardStatus(toCard.getId(), toCard);
 
         if (fromCard.equals(toCard))
-            throw new IllegalArgumentException("Вы пытаетесь перевести деньги на ту же карту, с которой отправляете." +
-                    " Возможно, вы ошиблись.");
+            throw new CardOperationFailedException(SAME_CARD_TRANSFER_MESSAGE);
 
         if (fromCard.getBalance().compareTo(transferDto.funds()) < 0)
-            throw new IllegalArgumentException("Недостаточно средств на карте");
+            throw new CardOperationFailedException(INSUFFICIENT_FUNDS_MESSAGE);
 
         fromCard.setBalance(fromCard.getBalance().subtract(transferDto.funds())
                 .setScale(2, RoundingMode.HALF_UP));
@@ -96,10 +115,11 @@ public class UserCardService {
         toCard.setBalance(toCard.getBalance().add(transferDto.funds())
                 .setScale(2, RoundingMode.HALF_UP));
 
-        return "Совершен перевод %s рублей с карты %s на карту %s"
-                .formatted(transferDto.funds(),
-                        mask(fromCard.getCardNumber()),
-                        mask(toCard.getCardNumber()));
+        return SUCCESS_TRANSFER_MESSAGE.formatted(
+                transferDto.funds(),
+                mask(fromCard.getCardNumber()),
+                mask(toCard.getCardNumber())
+        );
     }
 
 
@@ -109,7 +129,7 @@ public class UserCardService {
                                                String last4,
                                                CardStatus status) {
         if (!userRepository.existsById(userId))
-            throw new IllegalArgumentException("Пользователь не найден");
+            throw new UserNotFoundException(USER_NOT_FOUND_MESSAGE);
 
         Page<CardResponseDto> cards = cardRepository.findUserCards(pageable, userId, cardId, last4, status)
                 .map(card -> toDto(card, userId));
@@ -124,10 +144,10 @@ public class UserCardService {
 
         switch (card.getStatus()) {
             case ACTIVE -> card.setStatus(CardStatus.REQUESTED_BLOCKED);
-            case BLOCKED -> throw new IllegalArgumentException("Карта уже была заблокирована ренее");
-            case EXPIRED -> throw new IllegalArgumentException("Срок действия карты истек. Карта не активна");
-            case REQUESTED_BLOCKED -> throw new IllegalArgumentException("Вы уже запросили блокировку");
-            default -> throw new IllegalArgumentException("Неизвестный статус");
+            case BLOCKED -> throw new CardStatusException(CARD_ALREADY_BLOCKED_MESSAGE);
+            case EXPIRED -> throw new CardStatusException(CARD_EXPIRED_NOT_ACTIVE_MESSAGE);
+            case REQUESTED_BLOCKED -> throw new CardStatusException(ALREADY_REQUESTED_BLOCKED_MESSAGE);
+            default -> throw new CardStatusException(UNKNOWN_STATUS_MESSAGE);
         }
 
         return ResponseCardBlockDto.builder()
@@ -139,7 +159,7 @@ public class UserCardService {
 
     private Card getCardByCardIdAndUserId(Long cardId, Long userId) {
         return cardRepository.findCardByCardIdAndUserId(cardId, userId)
-                .orElseThrow(() -> new IllegalArgumentException("Карта не найдена"));
+                .orElseThrow(() -> new CardNotFoundException(CARD_NOT_FOUND_MESSAGE));
     }
 
 
@@ -175,16 +195,16 @@ public class UserCardService {
 
     private void validCardStatus(Long cardId, Card card) {
         if (card.getStatus() == CardStatus.BLOCKED) {
-            throw new IllegalArgumentException("Операция отклонена. Карта заблокирована");
+            throw new CardStatusException(REJECT_OPERATION_MESSAGE);
         }
 
         if (card.getStatus() == CardStatus.EXPIRED) {
-            throw new IllegalArgumentException("Срок действия карты истек. Обратитесь в службу поддержки");
+            throw new CardStatusException(CARD_EXPIRED_SUPPORT_MESSAGE);
         }
 
         if (card.getExpirationDate().isBefore(LocalDate.now())) {
             statusChanger.changeStatus(cardId);
-            throw new IllegalArgumentException("Срок действия карты истек. Обратитесь в службу поддержки");
+            throw new CardStatusException(CARD_EXPIRED_SUPPORT_MESSAGE);
         }
     }
 }

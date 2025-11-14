@@ -6,6 +6,7 @@ import com.example.bankcards.dto.card.RequestCardBlockDto;
 import com.example.bankcards.dto.card.ResponseCardBlockDto;
 import com.example.bankcards.dto.card.TransferDto;
 import com.example.bankcards.entity.CardStatus;
+import com.example.bankcards.security.CustomUserDetails;
 import com.example.bankcards.service.UserCardService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -17,6 +18,7 @@ import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -33,7 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 })
 @SecurityRequirement(name = "bearerAuth")
 @RestController
-@RequestMapping("api/v1/users")
+@RequestMapping("api/v1/users/cards")
 @RequiredArgsConstructor
 @Validated
 public class UserCardController {
@@ -43,32 +45,27 @@ public class UserCardController {
 
     @Operation(summary = "Поиск карт пользователя с фильтрацией (по ID, последним 4 цифрам, статусу) и пагинацией")
     @ApiResponse(responseCode = "200", description = "Список карт")
-    @GetMapping("{userId}")
+    @GetMapping
     public PageCardResponseDto searchUserCards(
             Pageable pageable,
-            @PathVariable
-            Long userId,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestParam(required = false) Long cardId,
             @RequestParam(required = false)
-            Long cardId,
-            @RequestParam(required = false)
-            @Pattern(regexp = "^\\d{4}$",
-                    message = "Поле должно содержать только последние 4 цифры номера карты")
-            String last4,
-            @RequestParam(required = false)
-            CardStatus status
+            @Pattern(regexp = "^\\d{4}$", message = "Поле должно содержать только последние 4 цифры номера карты") String last4,
+            @RequestParam(required = false) CardStatus status
     ) {
-        return userCardService.searchUserCards(pageable, userId, cardId, last4, status);
+        return userCardService.searchUserCards(pageable, userDetails.userId(), cardId, last4, status);
     }
 
 
     @Operation(summary = "Проверить баланс карты")
     @ApiResponse(responseCode = "200", description = "Баланс карты")
-    @GetMapping("/{userId}/balance/{cardId}")
+    @GetMapping("/balance/{cardId}")
     public ResponseEntity<String> checkBalance(
-            @PathVariable Long userId,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long cardId
     ) {
-        var message = userCardService.showBalance(cardId, userId);
+        var message = userCardService.showBalance(cardId, userDetails.userId());
 
         return ResponseEntity.ok(message);
     }
@@ -76,13 +73,13 @@ public class UserCardController {
 
     @Operation(summary = "Пополнить баланс карты")
     @ApiResponse(responseCode = "200", description = "Средства зачислены")
-    @PatchMapping("/{userId}/balance/{cardId}/deposit")
+    @PatchMapping("/balance/{cardId}/deposit")
     public ResponseEntity<String> deposit(
-            @PathVariable Long userId,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long cardId,
             @Valid @RequestBody FundsDto fundsDto
     ) {
-        var message = userCardService.deposit(userId, cardId, fundsDto);
+        var message = userCardService.deposit(userDetails.userId(), cardId, fundsDto);
 
         return ResponseEntity.ok(message);
     }
@@ -90,13 +87,13 @@ public class UserCardController {
 
     @Operation(summary = "Снять деньги с карты")
     @ApiResponse(responseCode = "200", description = "Деньги сняты")
-    @PatchMapping("/{userId}/balance/{cardId}/withdraw")
+    @PatchMapping("/balance/{cardId}/withdraw")
     public ResponseEntity<String> withdraw(
-            @PathVariable Long userId,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long cardId,
             @Valid @RequestBody FundsDto fundsDto
     ) {
-        var message = userCardService.withdraw(userId, cardId, fundsDto);
+        var message = userCardService.withdraw(userDetails.userId(), cardId, fundsDto);
 
         return ResponseEntity.ok(message);
     }
@@ -104,12 +101,12 @@ public class UserCardController {
 
     @Operation(summary = "Перевод между своими картами")
     @ApiResponse(responseCode = "200", description = "Перевод осуществлен")
-    @PatchMapping("/{userId}/transfer")
+    @PatchMapping("/transfer")
     public ResponseEntity<String> transferToOwnCard(
-            @PathVariable Long userId,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody TransferDto transferDto
     ) {
-        String message = userCardService.transferToOwnCard(userId, transferDto);
+        String message = userCardService.transferToOwnCard(userDetails.userId(), transferDto);
 
         return ResponseEntity.ok(message);
     }
@@ -117,13 +114,13 @@ public class UserCardController {
 
     @Operation(summary = "Запросить блокировку карты")
     @ApiResponse(responseCode = "200", description = "Блокировка запрошена")
-    @PatchMapping("/{userId}/cards/{cardId}/block")
+    @PatchMapping("/cards/{cardId}/block")
     public ResponseEntity<ResponseCardBlockDto> requestCardBlock(
-            @PathVariable Long userId,
+            @AuthenticationPrincipal CustomUserDetails userDetails,
             @PathVariable Long cardId,
             @Valid @RequestBody RequestCardBlockDto blockDto
     ) {
-        var message = userCardService.blockCard(userId, cardId, blockDto);
+        var message = userCardService.blockCard(userDetails.userId(), cardId, blockDto);
 
         return ResponseEntity.ok(message);
     }

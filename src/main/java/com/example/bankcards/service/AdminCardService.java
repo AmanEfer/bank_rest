@@ -4,6 +4,10 @@ import com.example.bankcards.dto.card.CardResponseDto;
 import com.example.bankcards.dto.card.PageCardResponseDto;
 import com.example.bankcards.entity.Card;
 import com.example.bankcards.entity.CardStatus;
+import com.example.bankcards.exception.CardNotFoundException;
+import com.example.bankcards.exception.CardStatusException;
+import com.example.bankcards.exception.RejectOperationException;
+import com.example.bankcards.exception.UserNotFoundException;
 import com.example.bankcards.repository.CardRepository;
 import com.example.bankcards.repository.UserRepository;
 import com.example.bankcards.util.CardMasker;
@@ -24,6 +28,14 @@ import java.util.Random;
 @RequiredArgsConstructor
 public class AdminCardService {
 
+    private static final String USER_NOT_FOUND_MESSAGE = "Пользователь не найден";
+    private static final String REQUESTED_BLOCKED_MESSAGE = "Для блокировки карты необходимо отправить запрос на блокировку";
+    private static final String CARD_BLOCKED_MESSAGE = "Карта %s заблокирована";
+    private static final String CARD_ALREADY_ACTIVATED_MESSAGE = "Карта уже активирована";
+    private static final String CARD_SUCCESSFULLY_ACTIVATED_MESSAGE = "Карта %s активирована";
+    private static final String CARD_DELETED_MESSAGE = "Карта %s удалена";
+    private static final String CARD_NOT_FOUND_MESSAGE = "Карта с ID %d не найдена";
+
     private static final Random RANDOM = new Random();
 
     private final CardRepository cardRepository;
@@ -33,7 +45,13 @@ public class AdminCardService {
 
     public CardResponseDto createNewCard(Long userId) {
         var user = userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("Пользователь не найден"));
+                .orElseThrow(() -> new UserNotFoundException(USER_NOT_FOUND_MESSAGE));
+
+        boolean isAdmin = user.getRoles().stream()
+                .anyMatch(r -> "ROLE_ADMIN".equalsIgnoreCase(r.getName()));
+
+        if (isAdmin)
+            throw new RejectOperationException("Операция отклонена. Администратор не может быть получателем карты");
 
         String cardNumber;
         do {
@@ -62,11 +80,11 @@ public class AdminCardService {
         var card = getCard(id);
 
         if (card.getStatus() != CardStatus.REQUESTED_BLOCKED)
-            throw new IllegalArgumentException("Для блокировки карты необходимо отправить запрос на блокировку");
+            throw new CardStatusException(REQUESTED_BLOCKED_MESSAGE);
 
         card.setStatus(CardStatus.BLOCKED);
 
-        return "Карта %s заблокирована".formatted(mask(card.getCardNumber()));
+        return CARD_BLOCKED_MESSAGE.formatted(mask(card.getCardNumber()));
     }
 
 
@@ -74,11 +92,11 @@ public class AdminCardService {
         var card = getCard(id);
 
         if (card.getStatus() == CardStatus.ACTIVE)
-            throw new IllegalArgumentException("Карта уже активирована");
+            throw new CardStatusException(CARD_ALREADY_ACTIVATED_MESSAGE);
 
         card.setStatus(CardStatus.ACTIVE);
 
-        return "Карта %s активирована".formatted(mask(card.getCardNumber()));
+        return CARD_SUCCESSFULLY_ACTIVATED_MESSAGE.formatted(mask(card.getCardNumber()));
     }
 
 
@@ -87,7 +105,7 @@ public class AdminCardService {
 
         cardRepository.delete(card);
 
-        return "Карта %s удалена".formatted(mask(card.getCardNumber()));
+        return CARD_DELETED_MESSAGE.formatted(mask(card.getCardNumber()));
     }
 
 
@@ -103,7 +121,7 @@ public class AdminCardService {
 
     public PageCardResponseDto getUserCards(Long id, Pageable pageable) {
         if (!userRepository.existsById(id))
-            throw new IllegalArgumentException("Пользователь не найден");
+            throw new UserNotFoundException(USER_NOT_FOUND_MESSAGE);
 
         Page<CardResponseDto> page = cardRepository.findCardsByUserId(id, pageable)
                 .map(card -> toDto(card, id));
@@ -115,7 +133,7 @@ public class AdminCardService {
     private Card getCard(Long id) {
         return cardRepository.findById(id)
                 .orElseThrow(() ->
-                        new IllegalArgumentException("Карта с ID %d не найдена".formatted(id)));
+                        new CardNotFoundException(CARD_NOT_FOUND_MESSAGE.formatted(id)));
     }
 
 

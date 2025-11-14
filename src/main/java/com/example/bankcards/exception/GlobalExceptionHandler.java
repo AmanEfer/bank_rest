@@ -67,4 +67,9 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleIllegalArgumentException(IllegalArgumentException ex) {
         return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(BaseCustomException.class)
+    public ResponseEntity<String> handleCustomException(BaseCustomException ex) {
+        return new ResponseEntity<>(ex.getMessage(), ex.getErrorCode());
+    }
 }

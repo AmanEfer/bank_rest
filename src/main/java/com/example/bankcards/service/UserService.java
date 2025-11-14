@@ -6,6 +6,8 @@ import com.example.bankcards.dto.user.UserResponseDto;
 import com.example.bankcards.dto.user.UserUpdateRequestDto;
 import com.example.bankcards.entity.Role;
 import com.example.bankcards.entity.User;
+import com.example.bankcards.exception.UserAlreadyRegisteredException;
+import com.example.bankcards.exception.UserNotFoundException;
 import com.example.bankcards.repository.CardRepository;
 import com.example.bankcards.repository.RoleRepository;
 import com.example.bankcards.repository.UserRepository;
@@ -24,6 +26,12 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class UserService {
 
+    private static final String USER_NOT_FOUND_MESSAGE = "Пользователь не найден";
+    private static final String PHONE_NUMBER_ALREADY_EXISTS_MESSAGE = "Пользователь с таким номером телефона уже зарегистрирован";
+    private static final String REGISTERED_SUCCESSFULLY_MESSAGE = "Пользователь %s %s успешно зарегистрирован в системе";
+    private static final String ROLE_USER = "ROLE_USER";
+    private static final String USER_DELETED_MESSAGE = "Пользователь с ID '%d' был удален";
+
     private final UserRepository userRepository;
     private final CardRepository cardRepository;
     private final RoleRepository roleRepository;
@@ -33,13 +41,12 @@ public class UserService {
     @Transactional
     public String registerUser(UserRegisterRequestDto dto) {
         if (userRepository.existsByPhoneNumber(dto.phoneNumber()))
-            throw new IllegalArgumentException("Пользователь с таким номером телефона уже зарегистрирован");
+            throw new UserAlreadyRegisteredException(PHONE_NUMBER_ALREADY_EXISTS_MESSAGE);
 
         var newUser = toUser(dto);
         userRepository.save(newUser);
 
-        return "Пользователь %s %s успешно зарегистрирован в системе"
-                .formatted(newUser.getLastName(), newUser.getFirstName());
+        return REGISTERED_SUCCESSFULLY_MESSAGE.formatted(newUser.getLastName(), newUser.getFirstName());
     }
 
 
@@ -60,7 +67,7 @@ public class UserService {
 
     public UserResponseDto getUserByPhoneNumber(String phoneNumber) {
         var user = userRepository.getUserByPhoneNumber(phoneNumber)
-                .orElseThrow(() -> new IllegalArgumentException("Пользователь не найден"));
+                .orElseThrow(() -> new UserNotFoundException(USER_NOT_FOUND_MESSAGE));
 
         return toUserResponseDto(user);
     }
@@ -87,23 +94,23 @@ public class UserService {
     @Transactional
     public String deleteUser(Long id) {
         if (!userRepository.existsById(id))
-            throw new IllegalArgumentException("Пользователь не найден");
+            throw new UserNotFoundException(USER_NOT_FOUND_MESSAGE);
 
         userRepository.deleteById(id);
 
-        return "Пользователь с ID '%d' был удален".formatted(id);
+        return USER_DELETED_MESSAGE.formatted(id);
     }
 
 
     private User getUser(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Пользователь не найден"));
+                .orElseThrow(() -> new UserNotFoundException(USER_NOT_FOUND_MESSAGE));
     }
 
 
     private User toUser(UserRegisterRequestDto dto) {
-        var role = roleRepository.findByName("ROLE_USER")
-                .orElseGet(() -> Role.builder().name("ROLE_USER").build());
+        var role = roleRepository.findByName(ROLE_USER)
+                .orElseGet(() -> Role.builder().name(ROLE_USER).build());
 
         return User.builder()
                 .firstName(dto.firstName())
