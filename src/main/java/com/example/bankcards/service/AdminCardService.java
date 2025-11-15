@@ -11,6 +11,7 @@ import com.example.bankcards.exception.UserNotFoundException;
 import com.example.bankcards.repository.CardRepository;
 import com.example.bankcards.repository.UserRepository;
 import com.example.bankcards.util.CardMasker;
+import com.example.bankcards.util.CardNumberGenerator;
 import com.example.bankcards.util.Encryptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -21,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.Random;
 
 @Service
 @Transactional
@@ -29,18 +29,11 @@ import java.util.Random;
 public class AdminCardService {
 
     private static final String USER_NOT_FOUND_MESSAGE = "Пользователь не найден";
-    private static final String REQUESTED_BLOCKED_MESSAGE = "Для блокировки карты необходимо отправить запрос на блокировку";
-    private static final String CARD_BLOCKED_MESSAGE = "Карта %s заблокирована";
-    private static final String CARD_ALREADY_ACTIVATED_MESSAGE = "Карта уже активирована";
-    private static final String CARD_SUCCESSFULLY_ACTIVATED_MESSAGE = "Карта %s активирована";
-    private static final String CARD_DELETED_MESSAGE = "Карта %s удалена";
-    private static final String CARD_NOT_FOUND_MESSAGE = "Карта с ID %d не найдена";
-
-    private static final Random RANDOM = new Random();
 
     private final CardRepository cardRepository;
     private final UserRepository userRepository;
     private final Encryptor encryptor;
+    private final CardNumberGenerator cardNumberGenerator;
 
 
     public CardResponseDto createNewCard(Long userId) {
@@ -55,7 +48,7 @@ public class AdminCardService {
 
         String cardNumber;
         do {
-            cardNumber = generateCardNumber();
+            cardNumber = cardNumberGenerator.generate();
         } while (cardRepository.existsByEncryptedCardNumber(encryptor.encrypt(cardNumber)));
 
         var newCard = Card.builder()
@@ -80,11 +73,11 @@ public class AdminCardService {
         var card = getCard(id);
 
         if (card.getStatus() != CardStatus.REQUESTED_BLOCKED)
-            throw new CardStatusException(REQUESTED_BLOCKED_MESSAGE);
+            throw new CardStatusException("Для блокировки карты необходимо отправить запрос на блокировку");
 
         card.setStatus(CardStatus.BLOCKED);
 
-        return CARD_BLOCKED_MESSAGE.formatted(mask(card.getCardNumber()));
+        return "Карта %s заблокирована".formatted(mask(card.getCardNumber()));
     }
 
 
@@ -92,11 +85,11 @@ public class AdminCardService {
         var card = getCard(id);
 
         if (card.getStatus() == CardStatus.ACTIVE)
-            throw new CardStatusException(CARD_ALREADY_ACTIVATED_MESSAGE);
+            throw new CardStatusException("Карта уже активирована");
 
         card.setStatus(CardStatus.ACTIVE);
 
-        return CARD_SUCCESSFULLY_ACTIVATED_MESSAGE.formatted(mask(card.getCardNumber()));
+        return "Карта %s активирована".formatted(mask(card.getCardNumber()));
     }
 
 
@@ -105,7 +98,7 @@ public class AdminCardService {
 
         cardRepository.delete(card);
 
-        return CARD_DELETED_MESSAGE.formatted(mask(card.getCardNumber()));
+        return "Карта %s удалена".formatted(mask(card.getCardNumber()));
     }
 
 
@@ -133,18 +126,7 @@ public class AdminCardService {
     private Card getCard(Long id) {
         return cardRepository.findById(id)
                 .orElseThrow(() ->
-                        new CardNotFoundException(CARD_NOT_FOUND_MESSAGE.formatted(id)));
-    }
-
-
-    private String generateCardNumber() {
-        var sb = new StringBuilder();
-
-        for (int i = 0; i < 16; i++) {
-            sb.append(RANDOM.nextInt(10));
-        }
-
-        return sb.toString();
+                        new CardNotFoundException("Карта с ID %d не найдена".formatted(id)));
     }
 
 

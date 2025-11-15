@@ -3,7 +3,6 @@ package com.example.bankcards.aspect;
 import com.example.bankcards.entity.Card;
 import com.example.bankcards.util.Encryptor;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.AfterReturning;
 import org.aspectj.lang.annotation.Aspect;
@@ -16,7 +15,6 @@ import java.util.Optional;
 @Aspect
 @Component
 @RequiredArgsConstructor
-@Slf4j
 public class EncryptCardAspect {
 
     private final Encryptor encryptor;
