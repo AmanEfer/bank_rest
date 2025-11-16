@@ -20,7 +20,7 @@ target/
 *.ipr
 
 ### Temporary hidding .md files ###
-*.md
+README.md
 
 ### File with environments ###
 .env
