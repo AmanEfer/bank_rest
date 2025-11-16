@@ -48,11 +48,19 @@ public class UserCardController {
     @GetMapping
     public PageCardResponseDto searchUserCards(
             Pageable pageable,
-            @AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestParam(required = false) Long cardId,
+
+            @AuthenticationPrincipal
+            CustomUserDetails userDetails,
+
             @RequestParam(required = false)
-            @Pattern(regexp = "^\\d{4}$", message = "Поле должно содержать только последние 4 цифры номера карты") String last4,
-            @RequestParam(required = false) CardStatus status
+            Long cardId,
+
+            @RequestParam(required = false)
+            @Pattern(regexp = "^\\d{4}$", message = "Поле должно содержать только последние 4 цифры номера карты")
+            String last4,
+
+            @RequestParam(required = false)
+            CardStatus status
     ) {
         return userCardService.searchUserCards(pageable, userDetails.userId(), cardId, last4, status);
     }
