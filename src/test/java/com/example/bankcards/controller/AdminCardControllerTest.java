@@ -180,8 +180,8 @@ class AdminCardControllerTest {
                         .param("size", "3"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(
-                                objectMapper.writeValueAsString(pageCardResponseDto)
-                        ));
+                        objectMapper.writeValueAsString(pageCardResponseDto)
+                ));
 
         verify(adminCardService).getUserCards(USER_ID, pageable);
     }

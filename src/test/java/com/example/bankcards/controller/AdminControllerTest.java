@@ -69,7 +69,7 @@ class AdminControllerTest {
 
 
     @BeforeEach
-    void setUp_200() throws Exception {
+    void setUp_200() {
         userResponseDto = UserResponseDto.builder()
                 .id(USER_ID)
                 .firstName(FIRST_NAME)
