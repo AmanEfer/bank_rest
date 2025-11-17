@@ -27,10 +27,7 @@ import java.util.Set;
 public class UserService {
 
     private static final String USER_NOT_FOUND_MESSAGE = "Пользователь не найден";
-    private static final String PHONE_NUMBER_ALREADY_EXISTS_MESSAGE = "Пользователь с таким номером телефона уже зарегистрирован";
-    private static final String REGISTERED_SUCCESSFULLY_MESSAGE = "Пользователь %s %s успешно зарегистрирован в системе";
     private static final String ROLE_USER = "ROLE_USER";
-    private static final String USER_DELETED_MESSAGE = "Пользователь с ID '%d' был удален";
 
     private final UserRepository userRepository;
     private final CardRepository cardRepository;
@@ -41,12 +38,13 @@ public class UserService {
     @Transactional
     public String registerUser(UserRegisterRequestDto dto) {
         if (userRepository.existsByPhoneNumber(dto.phoneNumber()))
-            throw new UserAlreadyRegisteredException(PHONE_NUMBER_ALREADY_EXISTS_MESSAGE);
+            throw new UserAlreadyRegisteredException("Пользователь с таким номером телефона уже зарегистрирован");
 
         var newUser = toUser(dto);
         userRepository.save(newUser);
 
-        return REGISTERED_SUCCESSFULLY_MESSAGE.formatted(newUser.getLastName(), newUser.getFirstName());
+        return "Пользователь %s %s успешно зарегистрирован в системе"
+                .formatted(newUser.getLastName(), newUser.getFirstName());
     }
 
 
@@ -98,7 +96,7 @@ public class UserService {
 
         userRepository.deleteById(id);
 
-        return USER_DELETED_MESSAGE.formatted(id);
+        return "Пользователь с ID '%d' был удален".formatted(id);
     }
 
 
